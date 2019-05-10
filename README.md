@@ -12,6 +12,8 @@ A partir disso os "clientes" e servidor devem fazer a computação das temperatu
 Deve ser considerada uma chapa de 400x400 pontos, com bordas a 0 C e pontos de calor dados na tabela abaixo: 
 O programa deve ser executado com 1, 3 e 7 clientes, medindo o tempo gasto em cada execução (repetir a medida pelo menos 10 vezes).
 
+<center>
+
 | Linha 	| Coluna 	| Temperatura 	|
 |------:	|--------	|-------------	|
 | 75    	| 75     	| -10         	|
@@ -23,6 +25,7 @@ O programa deve ser executado com 1, 3 e 7 clientes, medindo o tempo gasto em ca
 | 305   	| 75     	| 10          	|
 | 305   	| 175    	| 30          	|
 | 305   	| 275    	| 40          	|
+</center>
 
 ### Todo List
 ...
