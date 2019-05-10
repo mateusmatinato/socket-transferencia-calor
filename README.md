@@ -1,7 +1,7 @@
 # Socket - Transferência de Calor
 Trabalho da disciplina do 7º semestre do curso de Bacharelado em Ciência da Computação da UNESP - São José do Rio Preto.
 
-**Data de entrega**:  07/06, até 23h59
+**Data de entrega**:  07/06, até 23h59<br/>
 **Apresentação**: Marcar na semana seguinte a entrega
 
 ### Enunciado do trabalho:
