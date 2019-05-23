@@ -28,6 +28,9 @@ Trabalho da disciplina do 7º semestre do curso de Bacharelado em Ciência da Co
 </center>
 
 ### Todo List
-...
+
+
+### Anotaçoes
+* 23/05 (Mateus Matinato) - Comunicaçao entre o servidor e os clientes. O servidor aguarda a conexao de tres clientes e apos isso começa a enviar mensagens para eles. 
 
 
