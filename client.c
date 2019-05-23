@@ -8,30 +8,40 @@
 #define PORT 4040
 #define SA struct sockaddr
 
-// Função para troca de mensagens
-void func(int sockfd) {
-  char buff[MAX];
-  int n;
-  for (;;) {
-    bzero(buff, sizeof(buff));
-    printf("Enter the string : ");
-    n = 0;
-    while ((buff[n++] = getchar()) != '\n')
-      ;
-    write(sockfd, buff, sizeof(buff));
-    bzero(buff, sizeof(buff));
-    read(sockfd, buff, sizeof(buff));
-    printf("From Server : %s", buff);
-    if ((strncmp(buff, "exit", 4)) == 0) {
-      printf("Client Exit...\n");
-      break;
+void imprimeMatriz(float matriz[402][402], int iInicial, int iFinal) {
+  int i, j;
+  for (i = iInicial; i < iFinal; i++) {
+    printf("Linha %d\n", i);
+    for (j = 0; j < 402; j++) {
+      printf("%.2f ", matriz[i][j]);
     }
+    printf("\n\n");
   }
 }
 
 int main() {
-  int sockfd, connfd;
+  int sockfd, connfd, bytes_recv;
+  int i, j, k, iInicial, iFinal;
   struct sockaddr_in servaddr, cli;
+
+  // Zera a matriz
+  float matriz[402][402];
+  for (i = 0; i < 402; i++) {
+    for (j = 0; j < 402; j++) {
+      matriz[i][j] = 0;
+    }
+  }
+
+  // Insere os valores na matriz
+  matriz[75][75] = -10;
+  matriz[75][175] = 25;
+  matriz[75][275] = 0;
+  matriz[190][75] = 20;
+  matriz[190][175] = -20;
+  matriz[190][275] = 10;
+  matriz[305][75] = 10;
+  matriz[305][175] = 30;
+  matriz[305][275] = 40;
 
   // socket create and varification
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -56,20 +66,70 @@ int main() {
     printf("connected to the server..\n");
   }
 
-  //Enfia IP e Porta pro servidor...
+  // Enfia IP e Porta pro servidor...
   char buffer[MAX];
+
   printf("Digite o seu IP e porta (XXX.XXX.XXX.XXX:XXXX: ");
   bzero(buffer, sizeof(buffer));
   scanf("%s", &buffer);
   write(sockfd, buffer, sizeof(buffer));
-  while(1){
-    //aqui deve aguardar o servidor delegar qual o vizinho que ele deve se comunicar
+  while (1) {
     bzero(buffer, MAX);
-    read(sockfd, buffer, sizeof(buffer));
-    if(strlen(buffer) != 0){
-      printf("Mensagem recebida: %s\n",buffer);
+    bytes_recv = recv(sockfd, buffer, 1024, 0);
+    char iInicialString[3], iFinalString[3];
+    j = 0;
+
+    // Deve percorrer a string para pegar o iInicial e o iFinal do cliente
+    buffer[bytes_recv] = '\0';
+    while (buffer[j] != '=') {
+      // percorre até achar o =
+      j++;
     }
-    
+    j++; // pula pro próximo, que é o iInicial até o ;
+    i = 0;
+    while (buffer[j] != ';') {
+      iInicialString[i] = buffer[j];
+      j++;
+      i++;
+    }
+    iInicial = atoi(iInicialString);
+
+    // Percorre para achar o iFinal
+    while (buffer[j] != '=') {
+      // percorre até achar o =
+      j++;
+    }
+    j++; // pula pro próximo, que é o iFinal até o fim
+    i = 0;
+    while (buffer[j] != '\0') {
+      iFinalString[i] = buffer[j];
+      j++;
+      i++;
+    }
+    iFinal = atoi(iFinalString);
+
+    float erro = 0;
+    float erroAnterior;
+    float matrizAnterior;
+    k = 0;
+    do{
+      for (i = iInicial; i < iFinal; i++) {
+        for (j = 1; j <= 400; j++) {
+          // percorre somente o intervalo de linhas que pertence
+          erroAnterior = erro;
+          matrizAnterior = matriz[i][j];
+          matriz[i][j] = (matriz[i][j]+matriz[i-1][j]+matriz[i][j-1]+matriz[i+1][j]+matriz[i][j+1])/5;
+          erro = matriz[i][j] - matrizAnterior;
+          if(erroAnterior > erro) erro = erroAnterior; // isso garante que vai pegar o maior erro
+        }
+      }
+      k++;
+    }
+    while(erro > 0.01 && k < 100);
+
+    imprimeMatriz(matriz,iInicial,iFinal);
+    printf("Erro: %.2f\n",erro);
+    break;
   }
 
   // function for chat

@@ -18,10 +18,11 @@
 struct nodes {
   char ip[12];
   int port;
-  int rank;
+  int iInicial;
+  int iFinal;
 };
 
-/* NÃO UTILIZADO POR ENQUANTO 
+/* NÃO UTILIZADO POR ENQUANTO
 // Função para troca de mensagens
 void func(int sockfd) {
   char buff[MAX];
@@ -52,13 +53,66 @@ void func(int sockfd) {
 }
 */
 
+
+ int nodes[NUM_NODES]; // Variável global de nós conectados
+
+void imprimeMatriz(float matriz[402][402]) {
+  int i, j;
+  for (i = 0; i < 402; i++) {
+    printf("Linha %d\n", i);
+    for (j = 0; j < 402; j++) {
+      printf("%.2f ", matriz[i][j]);
+    }
+    printf("\n\n");
+  }
+}
+
+void enviarMensagem() {
+  char buffer[MAX];
+  int numNode, n;
+  n = 0;
+  bzero(buffer, sizeof(buffer));
+  printf("Para qual nó deseja enviar mensagem: ");
+  while ((buffer[n++] = getchar()) != '\n')
+    ;
+  numNode = atoi(buffer);
+
+  printf("Digite a mensagem: ");
+  n = 0;
+  bzero(buffer, sizeof(buffer));
+  while ((buffer[n++] = getchar()) != '\n')
+    ;
+  write(nodes[numNode], buffer, sizeof(buffer)); // envia para o nó escolhido a mensagem do buffer
+  printf("\n");
+}
+
+
 // Driver function
 int main() {
   int sockfd, connfd, len;
   struct sockaddr_in servaddr, cli;
-  int nodes[NUM_NODES];
   struct nodes clients[NUM_NODES];
   char buffer[MAX];
+  int i, j, k, bytes_recv;
+
+  // Zera a matriz
+  float matriz[402][402];
+  for (i = 0; i < 402; i++) {
+    for (j = 0; j < 402; j++) {
+      matriz[i][j] = 0;
+    }
+  }
+
+  // Insere os valores na matriz
+  matriz[75][75] = -10;
+  matriz[75][175] = 25;
+  matriz[75][275] = 0;
+  matriz[190][75] = 20;
+  matriz[190][175] = -20;
+  matriz[190][275] = 10;
+  matriz[305][75] = 10;
+  matriz[305][175] = 30;
+  matriz[305][275] = 40;
 
   // socket create and verification
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -89,8 +143,10 @@ int main() {
   } else
     printf("Server listening..\n");
 
-  int i, j, k, bytes_recv;
   char recv_data[1024], text[1024];
+
+  int iInicial = 101;
+  int iFinal = 200;
   for (i = 0; i < NUM_NODES; i++) {
 
     len = sizeof(cli);
@@ -123,7 +179,12 @@ int main() {
       j++;
     }
     clients[i].port = (int)strtol(porta, (char **)NULL, 10);
-    clients[i].rank = (i + 1); // atribui o rank com base na ordem que chegou
+    clients[i].iInicial = iInicial; // delega onde ele deve iniciar
+    clients[i].iFinal = iFinal;
+    
+    iInicial += 400/(NUM_NODES+1);
+    iFinal += 400/(NUM_NODES+1);
+
     printf("\nCliente %d conectado\nEndereço: %s:%d\n", i + 1, clients[i].ip,
            clients[i].port);
     fflush(stdout);
@@ -132,19 +193,20 @@ int main() {
   // Enviar mensagem para um nó específico
   while (1) {
     // loop para troca de mensagens
-    int numNode, n;
-    n = 0;
-    bzero(buffer,sizeof(buffer));
-    printf("Para qual nó deseja enviar mensagem: ");
-    while ((buffer[n++] = getchar()) != '\n');
-    numNode = atoi(buffer);
 
-    printf("Digite a mensagem: ");
-    n = 0;
-    bzero(buffer, sizeof(buffer));
-    while ((buffer[n++] = getchar()) != '\n');
-    write(nodes[numNode], buffer, sizeof(buffer)); // envia para o nó escolhido a mensagem do buffer
-    printf("\n");
+    //Deve distribuir a matriz entre os clientes
+    for(i = 0; i < NUM_NODES ; i++){
+      //percorre todos os nós e envia o intervalo que eles devem computar
+      bzero(buffer,sizeof(buffer));
+      snprintf (buffer, sizeof (buffer), "iInicial=%d; iFinal=%d", clients[i].iInicial, clients[i].iFinal);
+      send(nodes[i], buffer, sizeof(buffer),0);
+
+      //O servidor deve calcular de 1 até 100 e enviar os valores de 100 para o nó 1
+
+
+
+    }
+
   }
   close(sockfd); // termina o socket
 }
