@@ -19,9 +19,33 @@ void imprimeMatriz(float matriz[402][402], int iInicial, int iFinal) {
   }
 }
 
+void escreveMatrizArquivo(float matriz[402][402], int iInicial, int iFinal, int id) {
+  FILE *pArq;
+  int i,j;
+  int nLin, nCol;
+  char nomeArquivo[10];
+  snprintf(nomeArquivo, sizeof(nomeArquivo), "Matriz-%d",id);
+  if ((pArq = fopen(nomeArquivo, "w")) == 0x0) {
+    printf("erro.");
+    exit(1);
+  }
+
+  for (i = 0; i < iInicial; i++) {
+    for (j = 0; j < iFinal; j++)
+      fprintf(pArq, "%.2f\t", matriz[i][j]);
+
+    fprintf(pArq, "\n");
+  }
+
+  if (fclose(pArq)) {
+    printf("erro.");
+    exit(1);
+  }
+}
+
 int main() {
   int sockfd, connfd, bytes_recv;
-  int i, j, k, iInicial, iFinal;
+  int i, j, k, iInicial, iFinal, vizinho, iteracaoLocal, iteracaoGlobal;
   struct sockaddr_in servaddr, cli;
 
   // Zera a matriz
@@ -73,10 +97,22 @@ int main() {
   bzero(buffer, sizeof(buffer));
   scanf("%s", &buffer);
   write(sockfd, buffer, sizeof(buffer));
+
+  /*
+  Inicializa a iteração do cliente em 1, quando receber a iteração global do
+  servidor o cliente deve comparar se a iteração global é igual a iteração
+  local, somente se as ite- rações forem iguais o cliente pode prosseguir, caso
+  contrário ele deve esperar. Quando o cliente receber a iteração global do
+  servidor e prosseguir, deve enviar para o vizinho a linha matriz[iFinal][]
+  para que ele possa fazer os cálculos sem conflito. Após enviar a ultima linha,
+  deve prosseguir com os cálculos e buscar o maior erro possível. O cliente deve
+  informar o maior erro para o servidor ao fim da iteração.
+  */
+  iteracaoLocal = 1;
   while (1) {
     bzero(buffer, MAX);
     bytes_recv = recv(sockfd, buffer, 1024, 0);
-    char iInicialString[3], iFinalString[3];
+    char iInicialString[3], iFinalString[3], vizinhoString[1];
     j = 0;
 
     // Deve percorrer a string para pegar o iInicial e o iFinal do cliente
@@ -99,42 +135,77 @@ int main() {
       // percorre até achar o =
       j++;
     }
-    j++; // pula pro próximo, que é o iFinal até o fim
+    j++; // pula pro próximo, que é o iFinal até o ;
     i = 0;
-    while (buffer[j] != '\0') {
+    while (buffer[j] != ';') {
       iFinalString[i] = buffer[j];
       j++;
       i++;
     }
     iFinal = atoi(iFinalString);
 
+    // Percorre para achar o vizinho
+    while (buffer[j] != '=') {
+      // percorre até achar o =
+      j++;
+    }
+    // Percore até o fim para pegar qual o vizinho
+    j++;
+    i = 0;
+    while (buffer[j] != '\o') {
+      vizinhoString[i] = buffer[j];
+      j++;
+      i++;
+    }
+    vizinho = atoi(vizinhoString);
+
+    printf("Cliente recebeu mensagem do servidor\niInicial: %d\tiFinal: "
+           "%d\tVizinho: %d\n",
+           iInicial, iFinal, vizinho);
+
+    // Deve receber qual a iteração global do servidor e comparar com a iteração
+    // global
+
+    // Se iteração local == iteração global pode enviar a linha
+    // (matriz[iFinal][]) para o vizinho
+
+    // Depois de enviar a linha para o vizinho deve fazer os cálculos da matriz
+    // Lembrar de, ao fim de cada iteração COLOCAR NOVAMENTE os pontos
+    // CONSTANTES!!
+
     float erro = 0;
     float erroAnterior;
     float matrizAnterior;
     k = 0;
-    do{
+    do {
       for (i = iInicial; i < iFinal; i++) {
         for (j = 1; j <= 400; j++) {
           // percorre somente o intervalo de linhas que pertence
           erroAnterior = erro;
           matrizAnterior = matriz[i][j];
-          matriz[i][j] = (matriz[i][j]+matriz[i-1][j]+matriz[i][j-1]+matriz[i+1][j]+matriz[i][j+1])/5;
+          matriz[i][j] = (matriz[i][j] + matriz[i - 1][j] + matriz[i][j - 1] +
+                          matriz[i + 1][j] + matriz[i][j + 1]) /
+                         5;
           erro = matriz[i][j] - matrizAnterior;
-          if(erroAnterior > erro) erro = erroAnterior; // isso garante que vai pegar o maior erro
+          if (erroAnterior > erro)
+            erro = erroAnterior; // isso garante que vai pegar o maior erro
         }
       }
+      matriz[75][75] = -10;
+      matriz[75][175] = 25;
+      matriz[75][275] = 0;
+      matriz[190][75] = 20;
+      matriz[190][175] = -20;
+      matriz[190][275] = 10;
+      matriz[305][75] = 10;
+      matriz[305][175] = 30;
+      matriz[305][275] = 40;
       k++;
-    }
-    while(erro > 0.01 && k < 100);
+    } while (erro > 0.01 && k < 100);
 
-    imprimeMatriz(matriz,iInicial,iFinal);
-    printf("Erro: %.2f\n",erro);
-    break;
+    escreveMatrizArquivo(matriz, iInicial, iFinal,vizinho);
+    printf("Erro: %.2f\n", erro);
   }
 
-  // function for chat
-  //  func(sockfd);
-
-  // close the socket
   close(sockfd);
 }

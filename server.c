@@ -15,11 +15,12 @@
 #define NUM_NODES 3
 
 // Cada nó possuirá um id, um ip, uma porta e um rank atribuído pelo servidor.
-struct nodes {
+struct clients {
   char ip[12];
   int port;
   int iInicial;
   int iFinal;
+  int vizinho;
 };
 
 /* NÃO UTILIZADO POR ENQUANTO
@@ -53,8 +54,7 @@ void func(int sockfd) {
 }
 */
 
-
- int nodes[NUM_NODES]; // Variável global de nós conectados
+int nodes[NUM_NODES]; // Variável global de nós conectados
 
 void imprimeMatriz(float matriz[402][402]) {
   int i, j;
@@ -82,16 +82,16 @@ void enviarMensagem() {
   bzero(buffer, sizeof(buffer));
   while ((buffer[n++] = getchar()) != '\n')
     ;
-  write(nodes[numNode], buffer, sizeof(buffer)); // envia para o nó escolhido a mensagem do buffer
+  write(nodes[numNode], buffer,
+        sizeof(buffer)); // envia para o nó escolhido a mensagem do buffer
   printf("\n");
 }
-
 
 // Driver function
 int main() {
   int sockfd, connfd, len;
   struct sockaddr_in servaddr, cli;
-  struct nodes clients[NUM_NODES];
+  struct clients clients[NUM_NODES];
   char buffer[MAX];
   int i, j, k, bytes_recv;
 
@@ -145,8 +145,9 @@ int main() {
 
   char recv_data[1024], text[1024];
 
-  int iInicial = 101;
-  int iFinal = 200;
+  int iInicial = 400 / (NUM_NODES + 1) + 1; // 400/4 + 1 = 101 ou 400/8 + 1 = 51
+  int iFinal = iInicial + 400 / (NUM_NODES + 1) -
+               1; // 101 + 100 - 1 = 200 ou 51 + 50 - 1 = 100
   for (i = 0; i < NUM_NODES; i++) {
 
     len = sizeof(cli);
@@ -181,32 +182,52 @@ int main() {
     clients[i].port = (int)strtol(porta, (char **)NULL, 10);
     clients[i].iInicial = iInicial; // delega onde ele deve iniciar
     clients[i].iFinal = iFinal;
-    
-    iInicial += 400/(NUM_NODES+1);
-    iFinal += 400/(NUM_NODES+1);
+
+    iInicial += 400 / (NUM_NODES + 1);
+    iFinal += 400 / (NUM_NODES + 1);
 
     printf("\nCliente %d conectado\nEndereço: %s:%d\n", i + 1, clients[i].ip,
            clients[i].port);
     fflush(stdout);
   }
 
-  // Enviar mensagem para um nó específico
+  // o vizinho do servidor é o primeiro nó
+  int vizinhoServidor = nodes[0];
+
+  // O iInicial do servidor sempre é 1 (ignora a borda), e o final é
+  // 400/(NUM_NODES+1)
+  iInicial = 1;
+  iFinal = 400 / (NUM_NODES + 1);
+
+  for (i = 0; i < NUM_NODES; i++) {
+    // Distribui os vizinhos entre os clientes
+    if (i != NUM_NODES - 1) {
+      // Enquanto não for o último nó, o vizinho do nó é o proximo
+      clients[i].vizinho = nodes[i + 1];
+    } else {
+      // o vizinho do último nó é null
+      clients[i].vizinho = 0;
+    }
+    bzero(buffer, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "iInicial=%d; iFinal=%d;vizinho=%d",
+             clients[i].iInicial, clients[i].iFinal, clients[i].vizinho);
+    send(nodes[i], buffer, sizeof(buffer), 0);
+    printf("Enviando mensagem para o nó %d\nID: %d\niInicial: %d\tiFinal: "
+           "%d\tVizinho: %d\n",
+           i, nodes[i], clients[i].iInicial, clients[i].iFinal,
+           clients[i].vizinho);
+  }
+
+  int iteracao = 1;
   while (1) {
     // loop para troca de mensagens
 
-    //Deve distribuir a matriz entre os clientes
-    for(i = 0; i < NUM_NODES ; i++){
-      //percorre todos os nós e envia o intervalo que eles devem computar
-      bzero(buffer,sizeof(buffer));
-      snprintf (buffer, sizeof (buffer), "iInicial=%d; iFinal=%d", clients[i].iInicial, clients[i].iFinal);
-      send(nodes[i], buffer, sizeof(buffer),0);
-
-      //O servidor deve calcular de 1 até 100 e enviar os valores de 100 para o nó 1
-
-
-
-    }
-
+    /*
+    For para enviar as informações iniciais a todos os clientes:
+    Informa o iInicial que cada um vai trabalhar
+    Informa o iFinal que cada um vai trabalhar
+    Informa qual o vizinho de cada um
+    */
   }
   close(sockfd); // termina o socket
 }
