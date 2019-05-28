@@ -1,3 +1,4 @@
+
 #include <arpa/inet.h>
 #include <math.h>
 #include <netdb.h>
@@ -9,8 +10,9 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include "funcoes.h"
 #define MAX 80
-#define PORT 8080
+#define PORT 4040
 #define SA struct sockaddr
 #define NUM_NODES 3
 
@@ -20,75 +22,14 @@ struct clients {
   int port;
   int iInicial;
   int iFinal;
-  int vizinho;
+  int vizinhoCima;
+  int vizinhoBaixo;
+  int id;
 };
 
-/* NÃO UTILIZADO POR ENQUANTO
-// Função para troca de mensagens
-void func(int sockfd) {
-  char buff[MAX];
-  int n;
-  // infinite loop for chat
-  for (;;) {
-    bzero(buff, MAX);
-
-    // read the message from client and copy it in buffer
-    read(sockfd, buff, sizeof(buff));
-    // print buffer which contains the client contents
-    printf("From client: %s\nTo client : ", buff);
-    bzero(buff, MAX);
-    n = 0;
-    // copy server message in the buffer
-    while ((buff[n++] = getchar()) != '\n')
-      ;
-
-    // and send that buffer to client
-    write(sockfd, buff, sizeof(buff));
-
-    // if msg contains "Exit" then server exit and chat ended.
-    if (strncmp("exit", buff, 4) == 0) {
-      printf("Server Exit...\n");
-      break;
-    }
-  }
-}
-*/
-
-int nodes[NUM_NODES]; // Variável global de nós conectados
-
-void imprimeMatriz(float matriz[402][402]) {
-  int i, j;
-  for (i = 0; i < 402; i++) {
-    printf("Linha %d\n", i);
-    for (j = 0; j < 402; j++) {
-      printf("%.2f ", matriz[i][j]);
-    }
-    printf("\n\n");
-  }
-}
-
-void enviarMensagem() {
-  char buffer[MAX];
-  int numNode, n;
-  n = 0;
-  bzero(buffer, sizeof(buffer));
-  printf("Para qual nó deseja enviar mensagem: ");
-  while ((buffer[n++] = getchar()) != '\n')
-    ;
-  numNode = atoi(buffer);
-
-  printf("Digite a mensagem: ");
-  n = 0;
-  bzero(buffer, sizeof(buffer));
-  while ((buffer[n++] = getchar()) != '\n')
-    ;
-  write(nodes[numNode], buffer,
-        sizeof(buffer)); // envia para o nó escolhido a mensagem do buffer
-  printf("\n");
-}
-
-// Driver function
 int main() {
+
+  int nodes[NUM_NODES];
   int sockfd, connfd, len;
   struct sockaddr_in servaddr, cli;
   struct clients clients[NUM_NODES];
@@ -202,29 +143,106 @@ int main() {
 
   for (i = 0; i < NUM_NODES; i++) {
     // Distribui os vizinhos entre os clientes
-    if (i != NUM_NODES - 1) {
-      // Enquanto não for o último nó, o vizinho do nó é o proximo
-      clients[i].vizinho = nodes[i + 1];
-    } else {
-      // o vizinho do último nó é null
-      clients[i].vizinho = 0;
+    clients[i].id = i + 1;
+    if(i == 0){
+      //o vizinho de cima do primeiro nó é o servidor
+      clients[i].vizinhoCima = sockfd;    
+      clients[i].vizinhoBaixo = nodes[i+1];  
     }
+    else if(i == NUM_NODES - 1){
+      //o vizinho de baixo do ultimo client é 0
+      clients[i].vizinhoBaixo = 0;
+      clients[i].vizinhoCima = nodes[i-1];
+    }
+    else{
+      clients[i].vizinhoBaixo = nodes[i+1];
+      clients[i].vizinhoCima = nodes[i-1];
+    }
+
     bzero(buffer, sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "iInicial=%d; iFinal=%d;vizinho=%d",
-             clients[i].iInicial, clients[i].iFinal, clients[i].vizinho);
+    snprintf(buffer, sizeof(buffer), "iInicial=%d; iFinal=%d;vizinhoCima=%d;vizinhoBaixo=%d;id=%d",
+             clients[i].iInicial, clients[i].iFinal, clients[i].vizinhoCima, clients[i].vizinhoBaixo,
+             clients[i].id);
     send(nodes[i], buffer, sizeof(buffer), 0);
-    printf("Enviando mensagem para o nó %d\nID: %d\niInicial: %d\tiFinal: "
-           "%d\tVizinho: %d\n",
-           i, nodes[i], clients[i].iInicial, clients[i].iFinal,
-           clients[i].vizinho);
+    printf("Enviando mensagem para o nó %d\niInicial: %d\tiFinal: "
+           "%d\tVizinho de Cima: %d\tVizinho de Baixo: %d\tID:%d\n",
+           nodes[i],clients[i].iInicial, clients[i].iFinal,
+           clients[i].vizinhoCima,clients[i].vizinhoBaixo, clients[i].id);
   }
 
-  int iteracao = 1;
+  int iteracaoLocal = 1;
+  int iteracaoGlobal = 1;
+
+  float maiorErro = 0;
+  float erroAtual;
+  k = 1;
   while (1) {
     // loop para troca de mensagens
-
     
+    //envia a iteração atual para todos os clientes
+    bzero(buffer, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "iteracaoGlobal=%d",iteracaoGlobal);
+    for(i = 0 ; i < NUM_NODES; i++){
+      send(nodes[i], buffer, sizeof(buffer), 0);
+    }
 
+    if (iteracaoLocal == iteracaoGlobal) {
+      // está na iteração certa, envia a ultima linha da sua matriz pro vizinho
+      send(vizinhoServidor, matrizBlack[iFinal], sizeof(matrizBlack[iFinal]), 0); //ISSO NÃO TÁ FUNFANDO
+
+      // após enviar a ultima linha, calcula a iteração atual
+      float erroAbsoluto = 0;
+      // Calcula os novos pontos e o erro em cada ponto, deve pegar o maior
+      // erro.
+      for (i = iInicial; i < iFinal; i++) {
+        for (j = 1; j <= 400; j++) {
+          // percorre somente o intervalo de linhas que pertence
+          matrizRed[i][j] = (matrizBlack[i][j] + matrizBlack[i - 1][j] +
+                             matrizBlack[i][j - 1] + matrizBlack[i + 1][j] +
+                             matrizBlack[i][j + 1]) /
+                            5;
+
+          matrizRed[75][175] = 25.00;
+          matrizRed[75][75] = -10.00;
+          matrizRed[75][275] = 0.00;
+          matrizRed[190][75] = 20.00;
+          matrizRed[190][175] = -20.00;
+          matrizRed[190][275] = 10.00;
+          matrizRed[305][75] = 10.00;
+          matrizRed[305][175] = 30.00;
+          matrizRed[305][275] = 40.00;
+
+          erroAtual = fabs(matrizRed[i][j] - matrizBlack[i][j]);
+
+          if (erroAtual > erroAbsoluto)
+            erroAbsoluto = erroAtual;
+        }
+      }
+
+      // A red está certa agora, deve mandar os valores para a black
+      for (i = iInicial; i < iFinal; i++) {
+        for (j = 1; j <= 400; j++) {
+          matrizBlack[i][j] = matrizRed[i][j];
+        }
+      }
+
+      printf("Iteração %d -> Erro: %.2f\n", k, erroAbsoluto);
+      escreveMatrizArquivo(matrizRed, iInicial, iFinal, 0);
+
+      iteracaoLocal++;
+      k++;
+    }
+
+    //aguarda todos os erros dos clientes
+
+
+    if (maiorErro < 0.01) {
+      // aqui deve juntar as matrizes em um arquivo e sair do while de troca de
+      // mensagens
+    } else {
+      // incrementa iteracaoGlobal e continua no loop de troca de mensagens
+      iteracaoGlobal++;
+    }
   }
   close(sockfd); // termina o socket
 }

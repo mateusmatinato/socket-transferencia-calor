@@ -1,54 +1,17 @@
-// Write CPP code here
 #include <math.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include "funcoes.h"
 #define MAX 80
-#define PORT 8080
+#define PORT 4040
 #define SA struct sockaddr
-
-void imprimeMatriz(float matriz[402][402], int iInicial, int iFinal) {
-  int i, j;
-  for (i = iInicial; i < iFinal; i++) {
-    printf("Linha %d\n", i);
-    for (j = 0; j < 402; j++) {
-      printf("%.2f ", matriz[i][j]);
-    }
-    printf("\n\n");
-  }
-}
-
-void escreveMatrizArquivo(float matriz[402][402], int iInicial, int iFinal,
-                          int id) {
-  FILE *pArq;
-  int i, j;
-  int nLin, nCol;
-  char nomeArquivo[10];
-  snprintf(nomeArquivo, sizeof(nomeArquivo), "Matriz-%d", id);
-  if ((pArq = fopen(nomeArquivo, "w")) == 0x0) {
-    printf("erro.");
-    exit(1);
-  }
-
-  for (i = iInicial; i < iFinal; i++) {
-    fprintf(pArq, "LINHA %d->\t", i);
-    for (j = 0; j <= 400; j++)
-      fprintf(pArq, "%.2f\t", matriz[i][j]);
-
-    fprintf(pArq, "\n");
-  }
-
-  if (fclose(pArq)) {
-    printf("erro.");
-    exit(1);
-  }
-}
 
 int main() {
   int sockfd, connfd, bytes_recv;
-  int i, j, k, iInicial, iFinal, vizinho, iteracaoLocal, iteracaoGlobal;
+  int i, j, k, iInicial, iFinal, vizinhoCima, vizinhoBaixo, iteracaoLocal, iteracaoGlobal, id;
   struct sockaddr_in servaddr, cli;
 
   // Zera a matriz
@@ -112,78 +75,132 @@ int main() {
   deve prosseguir com os cálculos e buscar o maior erro possível. O cliente deve
   informar o maior erro para o servidor ao fim da iteração.
   */
+
+  bzero(buffer, MAX);
+  bytes_recv = recv(sockfd, buffer, 1024, 0);
+  char iInicialString[3], iFinalString[3], vizinhoString[1], idString[2];
+  j = 0;
+
+  // Deve percorrer a string para pegar o iInicial e o iFinal do cliente
+  buffer[bytes_recv] = '\0';
+  while (buffer[j] != '=') {
+    // percorre até achar o =
+    j++;
+  }
+  j++; // pula pro próximo, que é o iInicial até o ;
+  i = 0;
+  while (buffer[j] != ';') {
+    iInicialString[i] = buffer[j];
+    j++;
+    i++;
+  }
+  iInicial = atoi(iInicialString);
+
+  // Percorre para achar o iFinal
+  while (buffer[j] != '=') {
+    // percorre até achar o =
+    j++;
+  }
+  j++; // pula pro próximo, que é o iFinal até o ;
+  i = 0;
+  while (buffer[j] != ';') {
+    iFinalString[i] = buffer[j];
+    j++;
+    i++;
+  }
+  iFinal = atoi(iFinalString);
+
+  // Percorre para achar o vizinho
+  while (buffer[j] != '=') {
+    // percorre até achar o =
+    j++;
+  }
+  // Percore até o ; para pegar qual o vizinho de cima
+  j++;
+  i = 0;
+  while (buffer[j] != ';') {
+    vizinhoString[i] = buffer[j];
+    j++;
+    i++;
+  }
+  vizinhoCima = atoi(vizinhoString);
+
+  //percorre até achar o ;
+  while(buffer[j] != '='){
+    j++;
+  }
+  j++;
+  i = 0;
+  bzero(vizinhoString,sizeof(vizinhoString));
+  while(buffer[j] != ';'){
+    //percorre até 0 ; para pegar o vizinho de baixo
+    vizinhoString[i] = buffer[j];
+    j++;
+    i++;
+  }
+  vizinhoBaixo = atoi(vizinhoString);
+  // percore até achar o =
+  j++;
+  while (buffer[j] != '=') {
+    j++;
+  }
+  j++;
+  i = 0;
+  while (buffer[j] != '\0') {
+    idString[i] = buffer[j];
+    j++;
+  }
+  id = atoi(idString);
+
+  printf("Cliente recebeu mensagem do servidor\niInicial: %d\tiFinal: "
+         "%d\tVizinho de Cima: %d\tVizinho de Baixo: %d\tID: %d\n",
+         iInicial, iFinal, vizinhoCima, vizinhoBaixo,id);
+
   iteracaoLocal = 1;
   while (1) {
-    bzero(buffer, MAX);
-    bytes_recv = recv(sockfd, buffer, 1024, 0);
-    char iInicialString[3], iFinalString[3], vizinhoString[1];
-    j = 0;
-
-    // Deve percorrer a string para pegar o iInicial e o iFinal do cliente
-    buffer[bytes_recv] = '\0';
-    while (buffer[j] != '=') {
-      // percorre até achar o =
-      j++;
-    }
-    j++; // pula pro próximo, que é o iInicial até o ;
-    i = 0;
-    while (buffer[j] != ';') {
-      iInicialString[i] = buffer[j];
-      j++;
-      i++;
-    }
-    iInicial = atoi(iInicialString);
-
-    // Percorre para achar o iFinal
-    while (buffer[j] != '=') {
-      // percorre até achar o =
-      j++;
-    }
-    j++; // pula pro próximo, que é o iFinal até o ;
-    i = 0;
-    while (buffer[j] != ';') {
-      iFinalString[i] = buffer[j];
-      j++;
-      i++;
-    }
-    iFinal = atoi(iFinalString);
-
-    // Percorre para achar o vizinho
-    while (buffer[j] != '=') {
-      // percorre até achar o =
-      j++;
-    }
-    // Percore até o fim para pegar qual o vizinho
-    j++;
-    i = 0;
-    while (buffer[j] != '\o') {
-      vizinhoString[i] = buffer[j];
-      j++;
-      i++;
-    }
-    vizinho = atoi(vizinhoString);
-
-    printf("Cliente recebeu mensagem do servidor\niInicial: %d\tiFinal: "
-           "%d\tVizinho: %d\n",
-           iInicial, iFinal, vizinho);
 
     // Deve receber qual a iteração global do servidor e comparar com a iteração
     // global
+    bzero(buffer, MAX);
+    bytes_recv = recv(sockfd, buffer, 1024, 0);
+    buffer[bytes_recv] = '\0';
+    j = 0;
+    i = 0;
+    while (buffer[j] != '=')
+      j++;
+    j++;
+    char iteracaoString[3];
+    while (buffer[j] != '\0') {
+      iteracaoString[i] = buffer[j];
+      j++;
+      i++;
+    }
+    iteracaoGlobal = atoi(iteracaoString);
 
-    // Se iteração local == iteração global pode enviar a linha
-    // (matriz[iFinal][]) para o vizinho
+    float linhaRecebida[402];
+    bzero(linhaRecebida, sizeof(linhaRecebida));
+    if (iteracaoLocal == iteracaoGlobal) {
+      // está na iteração certa, aguarda a linha do vizinho
+      printf("Aguardando linha do vizinho...%d\n", iteracaoLocal);
+        bytes_recv = recv(vizinhoCima, linhaRecebida, 402, 0); //NÃO TA RECEBENDO A LINHA DO VIZINHO DE CIMA
 
-    // Depois de enviar a linha para o vizinho deve fazer os cálculos da matriz
-    // Lembrar de, ao fim de cada iteração COLOCAR NOVAMENTE os pontos
-    // CONSTANTES!!
+      for (i = 0; i < 402; i++) {
+        matrizBlack[iInicial - 1][i] = linhaRecebida[i];
+      }
 
-    float erroAtual, erroAbsoluto;
-    float matrizAnterior;
-    k = 0;
-    do {
+      // Envia a linha pro vizinho de baixo
+      if (vizinhoBaixo != 0) {
+        // o ultimo cliente não precisa mandar
+        matrizBlack[iFinal][10] = 1042;
+        send(vizinhoBaixo, matrizBlack[iFinal], sizeof(matrizBlack[iFinal]), 0);
+      }
+
+      // faz os cálculos da matriz
+
+      float erroAtual, erroAbsoluto;
+      float matrizAnterior;
       erroAbsoluto = 0;
-      // Calcula os novos pontos e o erro em cada ponto, deve pegar o maior
-      // erro.
+
       for (i = iInicial; i < iFinal; i++) {
         for (j = 1; j <= 400; j++) {
           // percorre somente o intervalo de linhas que pertence
@@ -216,14 +233,17 @@ int main() {
         }
       }
 
-      printf("Iteração %d -> Erro: %.2f\n", k, erroAbsoluto);
-      escreveMatrizArquivo(matrizRed, iInicial, iFinal, vizinho);
-      k++;
-    } while (erroAbsoluto > 0.01);
+      printf("Iteração %d -> Erro: %.2f\n\n", k, erroAbsoluto);
 
-    escreveMatrizArquivo(matrizBlack, iInicial, iFinal, vizinho);
-    printf("Erro: %.2f\n", erroAbsoluto);
+      iteracaoLocal++;
+    }
+
+    // Escreve a matriz em um arquivo
+    escreveMatrizArquivo(matrizBlack, iInicial, iFinal, id);
+
+    // Deve enviar para o servidor o erro
+    //...
+    break;
   }
-
   close(sockfd);
 }
