@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 #define MAX 80
-#define PORT 4040
+#define PORT 8080
 #define SA struct sockaddr
 #define NUM_NODES 3
 
@@ -96,23 +96,24 @@ int main() {
   int i, j, k, bytes_recv;
 
   // Zera a matriz
-  float matriz[402][402];
+  float matrizRed[402][402], matrizBlack[402][402];
   for (i = 0; i < 402; i++) {
     for (j = 0; j < 402; j++) {
-      matriz[i][j] = 0;
+      matrizRed[i][j] = 0;
+      matrizBlack[i][j] = 0;
     }
   }
 
   // Insere os valores na matriz
-  matriz[75][75] = -10;
-  matriz[75][175] = 25;
-  matriz[75][275] = 0;
-  matriz[190][75] = 20;
-  matriz[190][175] = -20;
-  matriz[190][275] = 10;
-  matriz[305][75] = 10;
-  matriz[305][175] = 30;
-  matriz[305][275] = 40;
+  matrizBlack[75][75] = -10;
+  matrizBlack[75][175] = 25;
+  matrizBlack[75][275] = 0;
+  matrizBlack[190][75] = 20;
+  matrizBlack[190][175] = -20;
+  matrizBlack[190][275] = 10;
+  matrizBlack[305][75] = 10;
+  matrizBlack[305][175] = 30;
+  matrizBlack[305][275] = 40;
 
   // socket create and verification
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -222,12 +223,8 @@ int main() {
   while (1) {
     // loop para troca de mensagens
 
-    /*
-    For para enviar as informações iniciais a todos os clientes:
-    Informa o iInicial que cada um vai trabalhar
-    Informa o iFinal que cada um vai trabalhar
-    Informa qual o vizinho de cada um
-    */
+    
+
   }
   close(sockfd); // termina o socket
 }
