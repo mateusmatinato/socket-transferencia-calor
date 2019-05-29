@@ -1,4 +1,3 @@
-
 #include <arpa/inet.h>
 #include <math.h>
 #include <netdb.h>
@@ -28,7 +27,6 @@ struct clients {
 };
 
 int main() {
-
   int nodes[NUM_NODES];
   int sockfd, connfd, len;
   struct sockaddr_in servaddr, cli;
@@ -72,7 +70,7 @@ int main() {
   servaddr.sin_port = htons(PORT);
 
   // Binding newly created socket to given IP and verification
-  if ((bind(sockfd, (SA *)&servaddr, sizeof(servaddr))) != 0) {
+  if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
     printf("socket bind failed...\n");
     exit(0);
   } else
@@ -87,13 +85,13 @@ int main() {
 
   char recv_data[1024], text[1024];
 
-  int iInicial = 400 / (NUM_NODES + 1) + 1; // 400/4 + 1 = 101 ou 400/8 + 1 = 51
+  int iInicial =
+      400 / (NUM_NODES + 1) + 1;  // 400/4 + 1 = 101 ou 400/8 + 1 = 51
   int iFinal = iInicial + 400 / (NUM_NODES + 1) -
-               1; // 101 + 100 - 1 = 200 ou 51 + 50 - 1 = 100
+               1;  // 101 + 100 - 1 = 200 ou 51 + 50 - 1 = 100
   for (i = 0; i < NUM_NODES; i++) {
-
     len = sizeof(cli);
-    nodes[i] = accept(sockfd, (SA *)&cli, &len);
+    nodes[i] = accept(sockfd, (SA*)&cli, &len);
     if (nodes[i] < 0) {
       printf("Conexão com o nó %d falhou!\n", i + 1);
     } else {
@@ -121,8 +119,8 @@ int main() {
       k++;
       j++;
     }
-    clients[i].port = (int)strtol(porta, (char **)NULL, 10);
-    clients[i].iInicial = iInicial; // delega onde ele deve iniciar
+    clients[i].port = (int)strtol(porta, (char**)NULL, 10);
+    clients[i].iInicial = iInicial;  // delega onde ele deve iniciar
     clients[i].iFinal = iFinal;
 
     iInicial += 400 / (NUM_NODES + 1);
@@ -143,31 +141,31 @@ int main() {
 
   for (i = 0; i < NUM_NODES; i++) {
     // Distribui os vizinhos entre os clientes
-    clients[i].id = i + 1;
-    if(i == 0){
-      //o vizinho de cima do primeiro nó é o servidor
-      clients[i].vizinhoCima = sockfd;    
-      clients[i].vizinhoBaixo = nodes[i+1];  
-    }
-    else if(i == NUM_NODES - 1){
-      //o vizinho de baixo do ultimo client é 0
+    clients[i].id = nodes[i];
+    if (i == 0) {
+      // o vizinho de cima do primeiro nó é o servidor
+      clients[i].vizinhoCima = sockfd;
+      clients[i].vizinhoBaixo = nodes[i + 1];
+    } else if (i == NUM_NODES - 1) {
+      // o vizinho de baixo do ultimo client é 0
       clients[i].vizinhoBaixo = 0;
-      clients[i].vizinhoCima = nodes[i-1];
-    }
-    else{
-      clients[i].vizinhoBaixo = nodes[i+1];
-      clients[i].vizinhoCima = nodes[i-1];
+      clients[i].vizinhoCima = nodes[i - 1];
+    } else {
+      clients[i].vizinhoBaixo = nodes[i + 1];
+      clients[i].vizinhoCima = nodes[i - 1];
     }
 
     bzero(buffer, sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "iInicial=%d; iFinal=%d;vizinhoCima=%d;vizinhoBaixo=%d;id=%d",
-             clients[i].iInicial, clients[i].iFinal, clients[i].vizinhoCima, clients[i].vizinhoBaixo,
-             clients[i].id);
+    snprintf(buffer, sizeof(buffer),
+             "iInicial=%d; iFinal=%d;vizinhoCima=%d;vizinhoBaixo=%d;id=%d",
+             clients[i].iInicial, clients[i].iFinal, clients[i].vizinhoCima,
+             clients[i].vizinhoBaixo, clients[i].id);
     send(nodes[i], buffer, sizeof(buffer), 0);
-    printf("Enviando mensagem para o nó %d\niInicial: %d\tiFinal: "
-           "%d\tVizinho de Cima: %d\tVizinho de Baixo: %d\tID:%d\n",
-           nodes[i],clients[i].iInicial, clients[i].iFinal,
-           clients[i].vizinhoCima,clients[i].vizinhoBaixo, clients[i].id);
+    printf(
+        "Enviando mensagem para o nó %d\niInicial: %d\tiFinal: "
+        "%d\tVizinho de Cima: %d\tVizinho de Baixo: %d\tID:%d\n",
+        nodes[i], clients[i].iInicial, clients[i].iFinal,
+        clients[i].vizinhoCima, clients[i].vizinhoBaixo, clients[i].id);
   }
 
   int iteracaoLocal = 1;
@@ -176,25 +174,30 @@ int main() {
   float maiorErro = 0;
   float erroAtual;
   k = 1;
-  while (1) {
+  while (1 && iteracaoGlobal <= 2) {
     // loop para troca de mensagens
-    
-    //envia a iteração atual para todos os clientes
+
+    // envia a iteração atual para todos os clientes
     bzero(buffer, sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "iteracaoGlobal=%d",iteracaoGlobal);
-    for(i = 0 ; i < NUM_NODES; i++){
+    snprintf(buffer, sizeof(buffer), "iteracaoGlobal=%d", iteracaoGlobal);
+    for (i = 0; i < NUM_NODES; i++) {
       send(nodes[i], buffer, sizeof(buffer), 0);
     }
 
     if (iteracaoLocal == iteracaoGlobal) {
-      // está na iteração certa, envia a ultima linha da sua matriz pro vizinho
-      send(vizinhoServidor, matrizBlack[iFinal], sizeof(matrizBlack[iFinal]), 0); //ISSO NÃO TÁ FUNFANDO
+      // envia as linhas de intersecção para todos os clientes
+      matrizBlack[100][10] = 100;  // debug
+      matrizBlack[200][10] = 200;  // debug
+      matrizBlack[300][10] = 300;  // debug
+      for (i = 0; i < NUM_NODES; i++) {
+        send(nodes[i], matrizBlack[clients[i].iInicial - 1],
+             sizeof(matrizBlack[clients[i].iInicial - 1]), 0);
+      }
 
-      // após enviar a ultima linha, calcula a iteração atual
       float erroAbsoluto = 0;
       // Calcula os novos pontos e o erro em cada ponto, deve pegar o maior
       // erro.
-      for (i = iInicial; i < iFinal; i++) {
+      for (i = iInicial; i <= iFinal; i++) {
         for (j = 1; j <= 400; j++) {
           // percorre somente o intervalo de linhas que pertence
           matrizRed[i][j] = (matrizBlack[i][j] + matrizBlack[i - 1][j] +
@@ -220,29 +223,58 @@ int main() {
       }
 
       // A red está certa agora, deve mandar os valores para a black
-      for (i = iInicial; i < iFinal; i++) {
+      for (i = iInicial; i <= iFinal; i++) {
         for (j = 1; j <= 400; j++) {
           matrizBlack[i][j] = matrizRed[i][j];
         }
       }
 
       printf("Iteração %d -> Erro: %.2f\n", k, erroAbsoluto);
-      escreveMatrizArquivo(matrizRed, iInicial, iFinal, 0);
 
       iteracaoLocal++;
       k++;
+
+      // recebe as linhas de intersecção e coloca na matrizBlack
+      float linhaRecebida[402];
+      float erro;
+      char erroString[5];
+      bzero(buffer, sizeof(buffer));
+      for (i = 0; i < NUM_NODES; i++) {
+        bzero(linhaRecebida, sizeof(linhaRecebida));
+        bytes_recv = recv(nodes[i], linhaRecebida, sizeof(linhaRecebida), 0);
+        bytes_recv = recv(nodes[i], buffer, sizeof(buffer), 0);
+        buffer[bytes_recv] = '\0';
+        j = 0;
+        k = 0;
+        while (buffer[j] != '\0') {
+          erroString[k] = buffer[j];
+          j++;
+          k++;
+        }
+        erro = atof(erroString);
+        if (erro > maiorErro)
+          maiorErro = erro;
+
+        printf("\nRecebendo informações do nó %d:\n", nodes[i]);
+        printf("Recebendo linha %d da matriz.\n", clients[i].iFinal);
+        printf("Erro recebido: %.2f\n", erro);
+        for (j = 0; j < 402; j++) {
+          matrizBlack[clients[i].iFinal][j] = linhaRecebida[j];
+        }
+      }
+
+      if (maiorErro < 0.01) {
+        // aqui deve juntar as matrizes em um arquivo e sair do while de troca
+        // de mensagens
+      } else {
+        // incrementa iteracaoGlobal e continua no loop de troca de mensagens
+        iteracaoGlobal++;
+      }
     }
 
-    //aguarda todos os erros dos clientes
+    escreveMatrizArquivo(matrizBlack, iInicial, iFinal, 0);
 
-
-    if (maiorErro < 0.01) {
-      // aqui deve juntar as matrizes em um arquivo e sair do while de troca de
-      // mensagens
-    } else {
-      // incrementa iteracaoGlobal e continua no loop de troca de mensagens
-      iteracaoGlobal++;
-    }
+    // break;
   }
-  close(sockfd); // termina o socket
+  close(sockfd);  // termina o socket
 }

@@ -11,7 +11,8 @@
 
 int main() {
   int sockfd, connfd, bytes_recv;
-  int i, j, k, iInicial, iFinal, vizinhoCima, vizinhoBaixo, iteracaoLocal, iteracaoGlobal, id;
+  int i, j, k, iInicial, iFinal, vizinhoCima, vizinhoBaixo, iteracaoLocal,
+      iteracaoGlobal, id;
   struct sockaddr_in servaddr, cli;
 
   // Zera a matriz
@@ -49,11 +50,10 @@ int main() {
   servaddr.sin_port = htons(PORT);
 
   // connect the client socket to server socket
-  if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) != 0) {
+  if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
     printf("connection with the server failed...\n");
     exit(0);
   } else {
-
     printf("connected to the server..\n");
   }
 
@@ -62,19 +62,8 @@ int main() {
 
   printf("Digite o seu IP e porta (XXX.XXX.XXX.XXX:XXXX: ");
   bzero(buffer, sizeof(buffer));
-  scanf("%s", &buffer);
+  scanf("%s", buffer);
   write(sockfd, buffer, sizeof(buffer));
-
-  /*
-  Inicializa a iteração do cliente em 1, quando receber a iteração global do
-  servidor o cliente deve comparar se a iteração global é igual a iteração
-  local, somente se as ite- rações forem iguais o cliente pode prosseguir, caso
-  contrário ele deve esperar. Quando o cliente receber a iteração global do
-  servidor e prosseguir, deve enviar para o vizinho a linha matriz[iFinal][]
-  para que ele possa fazer os cálculos sem conflito. Após enviar a ultima linha,
-  deve prosseguir com os cálculos e buscar o maior erro possível. O cliente deve
-  informar o maior erro para o servidor ao fim da iteração.
-  */
 
   bzero(buffer, MAX);
   bytes_recv = recv(sockfd, buffer, 1024, 0);
@@ -87,7 +76,7 @@ int main() {
     // percorre até achar o =
     j++;
   }
-  j++; // pula pro próximo, que é o iInicial até o ;
+  j++;  // pula pro próximo, que é o iInicial até o ;
   i = 0;
   while (buffer[j] != ';') {
     iInicialString[i] = buffer[j];
@@ -101,7 +90,7 @@ int main() {
     // percorre até achar o =
     j++;
   }
-  j++; // pula pro próximo, que é o iFinal até o ;
+  j++;  // pula pro próximo, que é o iFinal até o ;
   i = 0;
   while (buffer[j] != ';') {
     iFinalString[i] = buffer[j];
@@ -125,15 +114,15 @@ int main() {
   }
   vizinhoCima = atoi(vizinhoString);
 
-  //percorre até achar o ;
-  while(buffer[j] != '='){
+  // percorre até achar o ;
+  while (buffer[j] != '=') {
     j++;
   }
   j++;
   i = 0;
-  bzero(vizinhoString,sizeof(vizinhoString));
-  while(buffer[j] != ';'){
-    //percorre até 0 ; para pegar o vizinho de baixo
+  bzero(vizinhoString, sizeof(vizinhoString));
+  while (buffer[j] != ';') {
+    // percorre até 0 ; para pegar o vizinho de baixo
     vizinhoString[i] = buffer[j];
     j++;
     i++;
@@ -152,13 +141,14 @@ int main() {
   }
   id = atoi(idString);
 
-  printf("Cliente recebeu mensagem do servidor\niInicial: %d\tiFinal: "
-         "%d\tVizinho de Cima: %d\tVizinho de Baixo: %d\tID: %d\n",
-         iInicial, iFinal, vizinhoCima, vizinhoBaixo,id);
+  printf(
+      "Cliente recebeu mensagem do servidor\niInicial: %d\tiFinal: "
+      "%d\tVizinho de Cima: %d\tVizinho de Baixo: %d\tID: %d\n\n",
+      iInicial, iFinal, vizinhoCima, vizinhoBaixo, id);
 
   iteracaoLocal = 1;
-  while (1) {
-
+  iteracaoGlobal = 1;
+  while (1 && iteracaoGlobal <= 2) {
     // Deve receber qual a iteração global do servidor e comparar com a iteração
     // global
     bzero(buffer, MAX);
@@ -176,23 +166,21 @@ int main() {
       i++;
     }
     iteracaoGlobal = atoi(iteracaoString);
-
-    float linhaRecebida[402];
-    bzero(linhaRecebida, sizeof(linhaRecebida));
     if (iteracaoLocal == iteracaoGlobal) {
-      // está na iteração certa, aguarda a linha do vizinho
-      printf("Aguardando linha do vizinho...%d\n", iteracaoLocal);
-        bytes_recv = recv(vizinhoCima, linhaRecebida, 402, 0); //NÃO TA RECEBENDO A LINHA DO VIZINHO DE CIMA
+      printf("Nó %d iniciando iteração %d\n", id, iteracaoLocal);
 
+      // Deve receber a linha iInicial - 1 do servidor
+      float linhaRecebida[402];
+      bzero(linhaRecebida, sizeof(linhaRecebida));
+      printf("Aguardando linha do servidor...\n");
+      // do {
+      bytes_recv = recv(sockfd, linhaRecebida, sizeof(linhaRecebida), 0);
+      //} while (bytes_recv <= 0);
+
+      printf("Recebeu a linha do servidor %d\n", bytes_recv);
       for (i = 0; i < 402; i++) {
+        printf("[%d]= %.2f\n", i, linhaRecebida[i]);
         matrizBlack[iInicial - 1][i] = linhaRecebida[i];
-      }
-
-      // Envia a linha pro vizinho de baixo
-      if (vizinhoBaixo != 0) {
-        // o ultimo cliente não precisa mandar
-        matrizBlack[iFinal][10] = 1042;
-        send(vizinhoBaixo, matrizBlack[iFinal], sizeof(matrizBlack[iFinal]), 0);
       }
 
       // faz os cálculos da matriz
@@ -200,8 +188,8 @@ int main() {
       float erroAtual, erroAbsoluto;
       float matrizAnterior;
       erroAbsoluto = 0;
-
-      for (i = iInicial; i < iFinal; i++) {
+      printf("Iniciando os cálculos da iteração\n");
+      for (i = iInicial; i <= iFinal; i++) {
         for (j = 1; j <= 400; j++) {
           // percorre somente o intervalo de linhas que pertence
           matrizRed[i][j] = (matrizBlack[i][j] + matrizBlack[i - 1][j] +
@@ -227,23 +215,29 @@ int main() {
       }
 
       // A red está certa agora, deve mandar os valores para a black
-      for (i = iInicial; i < iFinal; i++) {
+      for (i = iInicial; i <= iFinal; i++) {
         for (j = 1; j <= 400; j++) {
           matrizBlack[i][j] = matrizRed[i][j];
         }
       }
 
-      printf("Iteração %d -> Erro: %.2f\n\n", k, erroAbsoluto);
+      printf("Iteração %d -> Erro: %.2f\n\n", iteracaoLocal, erroAbsoluto);
 
       iteracaoLocal++;
+      // Deve enviar para o servidor a última linha da matriz e o erro
+      printf("Enviando linha %d para o servidor.\n",iFinal);
+      send(sockfd, matrizBlack[iFinal], sizeof(matrizBlack[iFinal]), 0);
+
+      bzero(buffer,MAX);
+      gcvt(erroAbsoluto,4,buffer);
+      printf("Enviando erro (%s) para o servidor.\n",buffer);
+      send(sockfd,buffer,sizeof(buffer),0);
     }
 
     // Escreve a matriz em um arquivo
     escreveMatrizArquivo(matrizBlack, iInicial, iFinal, id);
 
-    // Deve enviar para o servidor o erro
-    //...
-    break;
+    //break;
   }
   close(sockfd);
 }

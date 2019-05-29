@@ -12,7 +12,7 @@ void escreveMatrizArquivo(float matriz[402][402], int iInicial, int iFinal,
 
   for (i = iInicial; i <= iFinal; i++) {
     fprintf(pArq, "LINHA %d->\t", i);
-    for (j = 0; j <= 400; j++)
+    for (j = 0; j <= 401; j++)
       fprintf(pArq, "%.2f\t", matriz[i][j]);
 
     fprintf(pArq, "\n");
