@@ -32,6 +32,8 @@ Trabalho da disciplina do 7º semestre do curso de Bacharelado em Ciência da Co
 
 * O servidor deve mandar a ultima linha para o vizinho ao fim de cada iteração. Cada cliente também deve enviar a ultima linha para o vizinho. Caso o vizinho for o servidor (último cliente) não é necessário mandar.
 
+* Trocar ordem no client: primeiro enviar para o vizinho e depois receber do vizinho.
+
 
 ### Anotaçoes
 * 23/05 (Mateus Matinato) - Comunicaçao entre o servidor e os clientes. O servidor aguarda a conexao de tres clientes e apos isso começa a enviar mensagens para eles. 
