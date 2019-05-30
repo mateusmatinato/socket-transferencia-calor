@@ -266,6 +266,14 @@ int main() {
       if (maiorErro < 0.01) {
         // aqui deve juntar as matrizes em um arquivo e sair do while de troca
         // de mensagens
+        int resultado = 0;
+        resultado = juntaMatrizesArquivo(&nodes, NUM_NODES);
+        if(resultado == 1){
+          printf("Pronto! Confira o resultado da execução no arquivo Matriz-resultado :D"); 
+        }
+        else{
+          printf("Erro! Não foi possível criar o arquivo resultado");
+        }
       } else {
         // incrementa iteracaoGlobal e continua no loop de troca de mensagens
         iteracaoGlobal++;
