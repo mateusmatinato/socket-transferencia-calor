@@ -70,7 +70,7 @@ int juntaMatrizesArquivo(int* nodes, int NUM_NODES) {
   return 1;
 }
 
-void matrizSaida(int id) {
+void matrizSaida(int id, int flag) {
   FILE* arquivoNo;
   FILE* arquivoFinal;
 
@@ -83,11 +83,13 @@ void matrizSaida(int id) {
   char leitor[10000];
 
   int i;
-  fprintf(arquivoFinal, "         \t");
-  for (i = 0; i < 402; i++) {
-    fprintf(arquivoFinal, "COL %d\t\t", i);
+  if (flag == 1) {
+    fprintf(arquivoFinal, "         \t");
+    for (i = 0; i < 402; i++) {
+      fprintf(arquivoFinal, "COL %d\t\t", i);
+    }
+    fprintf(arquivoFinal, "\n");
   }
-  fprintf(arquivoFinal, "\n");
 
   while (fgets(leitor, sizeof(leitor), arquivoNo) != NULL) {
     fputs(leitor, arquivoFinal);

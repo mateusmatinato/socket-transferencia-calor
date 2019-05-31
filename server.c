@@ -325,9 +325,9 @@ int main() {
 
   escreveMatrizArquivo(matrizBlack, iInicial, iFinal, sockfd);
 
-  matrizSaida(sockfd);
+  matrizSaida(sockfd,1);
   for (i = 0; i < NUM_NODES; i++) {
-    matrizSaida(clients[i].id);
+    matrizSaida(clients[i].id, 0);
   }
 
   printf("\n\n----------------- FIM -------------\n");
