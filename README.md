@@ -32,5 +32,7 @@ Trabalho da disciplina do 7º semestre do curso de Bacharelado em Ciência da Co
 
 * As vezes simplesmente não inicia a iteração em algum dos clientes. (?)
 
+* Tentar resolver pq ta printando -0.00 no arquivo grrr
+
 ### Anotaçoes
 * TA QUASE VEI
