@@ -28,15 +28,9 @@ Trabalho da disciplina do 7º semestre do curso de Bacharelado em Ciência da Co
 </center>
 
 ### Todo List
-* O servidor tem que controlar as iterações: cada cliente deve estar na mesma iteração que todos os outros.
+* Não está calculando o tempo direitinho (eu acho).
 
-* O servidor deve mandar a ultima linha para o vizinho ao fim de cada iteração. Cada cliente também deve enviar a ultima linha para o vizinho. Caso o vizinho for o servidor (último cliente) não é necessário mandar.
-
-* Trocar ordem no client: primeiro enviar para o vizinho e depois receber do vizinho.
-
+* As vezes simplesmente não inicia a iteração em algum dos clientes. (?)
 
 ### Anotaçoes
-* 23/05 (Mateus Matinato) - Comunicaçao entre o servidor e os clientes. O servidor aguarda a conexao de tres clientes e apos isso começa a enviar mensagens para eles. 
-
-* 28/05 (Mateus Matinato) - Os clientes estão calculando as matrizes. Ainda não está certo porque ele não envia a ultima linha para o vizinho. Mas a lógica do cálculo da matriz esta funcionando.
-
+* TA QUASE VEI
