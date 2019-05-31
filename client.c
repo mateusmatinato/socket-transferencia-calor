@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include "funcoes.h"
 #define MAX 80
-#define PORT 4040
+#define PORT 8080
 #define SA struct sockaddr
 
 int main() {
@@ -71,7 +71,12 @@ int main() {
     bytes_recv = recv(sockfd, buffer, 1024, 0);
   } while (bytes_recv <= 0);
 
-  char iInicialString[3], iFinalString[3], vizinhoString[1], idString[2];
+  char iInicialString[3], iFinalString[3], vizinhoString[3], idString[3];
+  bzero(iInicialString,sizeof(iInicialString));
+  bzero(iFinalString,sizeof(iFinalString));
+  bzero(vizinhoString,sizeof(vizinhoString));
+  bzero(idString,sizeof(idString));
+
   j = 0;
 
   // Deve percorrer a string para pegar o iInicial e o iFinal do cliente
@@ -142,6 +147,7 @@ int main() {
   while (buffer[j] != '\0') {
     idString[i] = buffer[j];
     j++;
+    i++;
   }
   id = atoi(idString);
 

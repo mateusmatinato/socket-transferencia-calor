@@ -11,9 +11,9 @@
 #include <unistd.h>
 #include "funcoes.h"
 #define MAX 80
-#define PORT 4040
+#define PORT 8080
 #define SA struct sockaddr
-#define NUM_NODES 1 //1, 3 ou 7
+#define NUM_NODES 7 //1, 3 ou 7
 
 // Cada nó possuirá um id, um ip, uma porta e um rank atribuído pelo servidor.
 struct clients {
