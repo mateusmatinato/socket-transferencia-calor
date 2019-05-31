@@ -13,7 +13,7 @@
 #define MAX 80
 #define PORT 4040
 #define SA struct sockaddr
-#define NUM_NODES 3
+#define NUM_NODES 1 //1, 3 ou 7
 
 // Cada nó possuirá um id, um ip, uma porta e um rank atribuído pelo servidor.
 struct clients {
@@ -33,6 +33,7 @@ int main() {
   struct clients clients[NUM_NODES];
   char buffer[MAX];
   int i, j, k, bytes_recv;
+  clock_t end, start;
 
   // Zera a matriz
   float matrizRed[402][402], matrizBlack[402][402];
@@ -142,24 +143,32 @@ int main() {
   for (i = 0; i < NUM_NODES; i++) {
     // Distribui os vizinhos entre os clientes
     clients[i].id = nodes[i];
-    if (i == 0) {
-      // o vizinho de cima do primeiro nó é o servidor
-      clients[i].vizinhoCima = sockfd;
-      clients[i].vizinhoBaixo = nodes[i + 1];
-    } else if (i == NUM_NODES - 1) {
-      // o vizinho de baixo do ultimo client é 0
-      clients[i].vizinhoBaixo = 0;
-      clients[i].vizinhoCima = nodes[i - 1];
+    if (NUM_NODES > 1) {
+      if (i == 0) {
+        // o vizinho de cima do primeiro nó é o servidor
+        clients[i].vizinhoCima = sockfd;
+        clients[i].vizinhoBaixo = nodes[i + 1];
+      } else if (i == NUM_NODES - 1) {
+        // o vizinho de baixo do ultimo client é 0
+        clients[i].vizinhoBaixo = 0;
+        clients[i].vizinhoCima = nodes[i - 1];
+      } else {
+        clients[i].vizinhoBaixo = nodes[i + 1];
+        clients[i].vizinhoCima = nodes[i - 1];
+      }
     } else {
-      clients[i].vizinhoBaixo = nodes[i + 1];
-      clients[i].vizinhoCima = nodes[i - 1];
+      // só tem um nó, então o vizinho de cima é o servidor e não tem vizinho de
+      // baixo
+      clients[i].vizinhoBaixo = 0;
+      clients[i].vizinhoCima = sockfd;
     }
 
-    bzero(buffer, sizeof(buffer));
+    strcpy(buffer, "");
     snprintf(buffer, sizeof(buffer),
              "iInicial=%d; iFinal=%d;vizinhoCima=%d;vizinhoBaixo=%d;id=%d",
              clients[i].iInicial, clients[i].iFinal, clients[i].vizinhoCima,
              clients[i].vizinhoBaixo, clients[i].id);
+
     send(nodes[i], buffer, sizeof(buffer), 0);
     printf(
         "Enviando mensagem para o nó %d\niInicial: %d\tiFinal: "
@@ -171,14 +180,20 @@ int main() {
   int iteracaoLocal = 1;
   int iteracaoGlobal = 1;
 
-  float maiorErro = 0;
   float erroAtual;
   k = 1;
-  while (1 && iteracaoGlobal <= 2) {
+
+  double tempoTotal = 0;
+  remove("MatrizFinal");  // remove o arquivo se tiver algum salvo
+  while (1) {
+    start = clock();
+    // começa a calcular o tempo da iteraçao
+
+    float maiorErro = 0;
     // loop para troca de mensagens
 
     // envia a iteração atual para todos os clientes
-    bzero(buffer, sizeof(buffer));
+    strcpy(buffer, "");
     snprintf(buffer, sizeof(buffer), "iteracaoGlobal=%d", iteracaoGlobal);
     for (i = 0; i < NUM_NODES; i++) {
       send(nodes[i], buffer, sizeof(buffer), 0);
@@ -186,12 +201,17 @@ int main() {
 
     if (iteracaoLocal == iteracaoGlobal) {
       // envia as linhas de intersecção para todos os clientes
-      matrizBlack[100][10] = 100;  // debug
-      matrizBlack[200][10] = 200;  // debug
-      matrizBlack[300][10] = 300;  // debug
+
       for (i = 0; i < NUM_NODES; i++) {
+        // envia a linha de cima
         send(nodes[i], matrizBlack[clients[i].iInicial - 1],
              sizeof(matrizBlack[clients[i].iInicial - 1]), 0);
+
+        // envia a primeira linha do de baixo somente se não for o último nó
+        if (i != NUM_NODES - 1) {
+          send(nodes[i], matrizBlack[clients[i].iFinal + 1],
+               sizeof(matrizBlack[clients[i].iFinal + 1]), 0);
+        }
       }
 
       float erroAbsoluto = 0;
@@ -229,20 +249,34 @@ int main() {
         }
       }
 
-      printf("Iteração %d -> Erro: %.2f\n", k, erroAbsoluto);
-
-      iteracaoLocal++;
+      printf("\nIteração %d -> Erro: %.3f\n", iteracaoLocal, erroAbsoluto);
       k++;
 
       // recebe as linhas de intersecção e coloca na matrizBlack
-      float linhaRecebida[402];
+      float linhaFinalRecebida[402], linhaInicialRecebida[402];
       float erro;
-      char erroString[5];
-      bzero(buffer, sizeof(buffer));
       for (i = 0; i < NUM_NODES; i++) {
-        bzero(linhaRecebida, sizeof(linhaRecebida));
-        bytes_recv = recv(nodes[i], linhaRecebida, sizeof(linhaRecebida), 0);
-        bytes_recv = recv(nodes[i], buffer, sizeof(buffer), 0);
+        for (j = 0; j < 402; j++) {
+          linhaInicialRecebida[j] = 0;
+          linhaFinalRecebida[j] = 0;
+        }
+        do {
+          bytes_recv =
+              recv(nodes[i], linhaFinalRecebida, sizeof(linhaFinalRecebida), 0);
+
+        } while (bytes_recv <= 0);
+
+        do {
+          bytes_recv = recv(nodes[i], linhaInicialRecebida,
+                            sizeof(linhaInicialRecebida), 0);
+        } while (bytes_recv <= 0);
+
+        strcpy(buffer, "");
+        do {
+          bytes_recv = recv(nodes[i], buffer, sizeof(buffer), 0);
+        } while (bytes_recv <= 0);
+
+        char erroString[bytes_recv];
         buffer[bytes_recv] = '\0';
         j = 0;
         k = 0;
@@ -257,32 +291,56 @@ int main() {
 
         printf("\nRecebendo informações do nó %d:\n", nodes[i]);
         printf("Recebendo linha %d da matriz.\n", clients[i].iFinal);
-        printf("Erro recebido: %.2f\n", erro);
+        printf("Erro recebido: %.3f\n", erro);
         for (j = 0; j < 402; j++) {
-          matrizBlack[clients[i].iFinal][j] = linhaRecebida[j];
+          matrizBlack[clients[i].iFinal][j] = linhaFinalRecebida[j];
+          matrizBlack[clients[i].iInicial][j] = linhaInicialRecebida[j];
         }
       }
 
+      end = clock();
+      double tempoIteracao = ((double)(end - start)) / CLOCKS_PER_SEC;
+      tempoTotal += tempoIteracao;
+
+      if (erroAbsoluto > maiorErro)
+        maiorErro = erroAbsoluto;
+      printf(
+          "--- FIM DA ITERAÇÃO %d -> Maior Erro: %.3f -> Tempo %.3f segs "
+          "---\n\n",
+          iteracaoGlobal, maiorErro, tempoIteracao);
+
+      iteracaoLocal++;
+
       if (maiorErro < 0.01) {
-        // aqui deve juntar as matrizes em um arquivo e sair do while de troca
-        // de mensagens
-        int resultado = 0;
-        resultado = juntaMatrizesArquivo(&nodes, NUM_NODES);
-        if(resultado == 1){
-          printf("Pronto! Confira o resultado da execução no arquivo Matriz-resultado :D"); 
-        }
-        else{
-          printf("Erro! Não foi possível criar o arquivo resultado");
-        }
+        iteracaoGlobal =
+            0;  // fala que a iteração global é zero para parar os clientes
       } else {
         // incrementa iteracaoGlobal e continua no loop de troca de mensagens
         iteracaoGlobal++;
       }
+    } else if (iteracaoGlobal == 0) {
+      break;
     }
-
-    escreveMatrizArquivo(matrizBlack, iInicial, iFinal, 0);
-
-    // break;
   }
-  close(sockfd);  // termina o socket
+
+  escreveMatrizArquivo(matrizBlack, iInicial, iFinal, sockfd);
+
+  matrizSaida(sockfd);
+  for (i = 0; i < NUM_NODES; i++) {
+    matrizSaida(clients[i].id);
+  }
+
+  printf("\n\n----------------- FIM -------------\n");
+  printf("Número de Nós (Clientes + Servidor): %d\n", NUM_NODES + 1);
+  printf("Tempo total: %.5f segundos\n", tempoTotal);
+  printf("Número total de iterações: %d\n", iteracaoLocal - 1);
+  printf("A matriz final foi salva no arquivo MatrizFinal.txt\n");
+  printf("-----------------------------------\n\n");
+
+  printf("Para finalizar digite SIM: ");
+  strcpy(buffer, "");
+  scanf("%s", buffer);
+  if (strcmp(buffer, "SIM") == 0 || strcmp(buffer, "sim") == 0) {
+    close(sockfd);  // termina o socket
+  }
 }

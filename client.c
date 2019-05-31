@@ -59,14 +59,18 @@ int main() {
 
   // Enfia IP e Porta pro servidor...
   char buffer[MAX];
+  char resposta[MAX];
 
   printf("Digite o seu IP e porta (XXX.XXX.XXX.XXX:XXXX: ");
-  bzero(buffer, sizeof(buffer));
+  strcpy(buffer, "");
   scanf("%s", buffer);
   write(sockfd, buffer, sizeof(buffer));
 
   bzero(buffer, MAX);
-  bytes_recv = recv(sockfd, buffer, 1024, 0);
+  do {
+    bytes_recv = recv(sockfd, buffer, 1024, 0);
+  } while (bytes_recv <= 0);
+
   char iInicialString[3], iFinalString[3], vizinhoString[1], idString[2];
   j = 0;
 
@@ -120,7 +124,7 @@ int main() {
   }
   j++;
   i = 0;
-  bzero(vizinhoString, sizeof(vizinhoString));
+  strcpy(vizinhoString, "");
   while (buffer[j] != ';') {
     // percorre até 0 ; para pegar o vizinho de baixo
     vizinhoString[i] = buffer[j];
@@ -148,39 +152,59 @@ int main() {
 
   iteracaoLocal = 1;
   iteracaoGlobal = 1;
-  while (1 && iteracaoGlobal <= 2) {
+  while (1) {
     // Deve receber qual a iteração global do servidor e comparar com a iteração
     // global
-    bzero(buffer, MAX);
-    bytes_recv = recv(sockfd, buffer, 1024, 0);
+    strcpy(buffer, "");
+    do {
+      bytes_recv = recv(sockfd, buffer, 1024, 0);
+    } while (bytes_recv <= 0);
     buffer[bytes_recv] = '\0';
     j = 0;
-    i = 0;
     while (buffer[j] != '=')
       j++;
     j++;
     char iteracaoString[3];
+    bzero(iteracaoString,sizeof(iteracaoString));
+    i = 0;
     while (buffer[j] != '\0') {
       iteracaoString[i] = buffer[j];
       j++;
       i++;
     }
     iteracaoGlobal = atoi(iteracaoString);
+
     if (iteracaoLocal == iteracaoGlobal) {
       printf("Nó %d iniciando iteração %d\n", id, iteracaoLocal);
 
       // Deve receber a linha iInicial - 1 do servidor
-      float linhaRecebida[402];
-      bzero(linhaRecebida, sizeof(linhaRecebida));
-      printf("Aguardando linha do servidor...\n");
-      // do {
-      bytes_recv = recv(sockfd, linhaRecebida, sizeof(linhaRecebida), 0);
-      //} while (bytes_recv <= 0);
-
-      printf("Recebeu a linha do servidor %d\n", bytes_recv);
+      float linhaInicialRecebida[402], linhaFinalRecebida[402];
       for (i = 0; i < 402; i++) {
-        printf("[%d]= %.2f\n", i, linhaRecebida[i]);
-        matrizBlack[iInicial - 1][i] = linhaRecebida[i];
+        linhaInicialRecebida[i] = 0;
+        linhaFinalRecebida[i] = 0;
+      }
+
+      printf("Aguardando linha do servidor...\n");
+      bytes_recv =
+          recv(sockfd, linhaInicialRecebida, sizeof(linhaInicialRecebida), 0);
+
+      printf("Recebeu a linha inicial do servidor %d\n", bytes_recv);
+      if (vizinhoBaixo != 0) {
+        // só vai pegar a linha final se não for o último nó
+        bytes_recv =
+            recv(sockfd, linhaFinalRecebida, sizeof(linhaFinalRecebida), 0);
+      }
+
+      printf("Recebeu a linha final do servidor %d\n", bytes_recv);
+
+      for (i = 0; i < 402; i++) {
+        // printf("[%d][%d] = %.4f\n", iInicial - 1, i,
+        // linhaInicialRecebida[i]);
+        matrizBlack[iInicial - 1][i] = linhaInicialRecebida[i];
+        if (vizinhoBaixo != 0) {
+          // quando não for o último nó, recebe a linha final e coloca na matriz
+          matrizBlack[iFinal + 1][i] = linhaFinalRecebida[i];
+        }
       }
 
       // faz os cálculos da matriz
@@ -221,23 +245,27 @@ int main() {
         }
       }
 
-      printf("Iteração %d -> Erro: %.2f\n\n", iteracaoLocal, erroAbsoluto);
+      printf("Iteração %d -> Erro: %.3f\n\n", iteracaoLocal, erroAbsoluto);
+
+      // Deve enviar para o servidor a última linha da matriz e o erro
+      printf("Enviando linha %d e %d para o servidor.\n", iInicial, iFinal);
+      send(sockfd, matrizBlack[iFinal], sizeof(matrizBlack[iFinal]), 0);
+      send(sockfd, matrizBlack[iInicial], sizeof(matrizBlack[iInicial]), 0);
+
+      strcpy(buffer, "");
+      snprintf(buffer, sizeof(buffer), "%.3f", erroAbsoluto);
+      send(sockfd, buffer, sizeof(buffer), 0);
+
+      printf("--- FIM DA ITERAÇÃO %d -> Erro: %.3f ---\n\n", iteracaoLocal,
+             erroAbsoluto);
 
       iteracaoLocal++;
-      // Deve enviar para o servidor a última linha da matriz e o erro
-      printf("Enviando linha %d para o servidor.\n",iFinal);
-      send(sockfd, matrizBlack[iFinal], sizeof(matrizBlack[iFinal]), 0);
-
-      bzero(buffer,MAX);
-      gcvt(erroAbsoluto,4,buffer);
-      printf("Enviando erro (%s) para o servidor.\n",buffer);
-      send(sockfd,buffer,sizeof(buffer),0);
+    } else if (iteracaoGlobal == 0) {
+      break;  // termina o while
     }
-
-    // Escreve a matriz em um arquivo
-    escreveMatrizArquivo(matrizBlack, iInicial, iFinal, id);
-
-    //break;
   }
-  close(sockfd);
+  // Escreve a matriz em um arquivo
+  printf("\nFIM DO CLIENTE %d\n", id);
+  escreveMatrizArquivo(matrizBlack, iInicial, iFinal, id);
+  // close(sockfd);
 }
