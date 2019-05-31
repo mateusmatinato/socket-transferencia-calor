@@ -30,8 +30,10 @@ int juntaMatrizesArquivo(int* nodes, int NUM_NODES) {
   // abre todos os arquivos txt com as matrizes processadas por cada nó
   int i;
   FILE* matrizesParciais[NUM_NODES];
+  char* nomeArquivo;
   for (i = 0; i < NUM_NODES; i++) {
-    matrizesParciais[i] = fopen("Matriz-%d.txt", "r", nodes[i]);
+    sprintf(nomeArquivo, "Matriz-%d", nodes[i]);
+    matrizesParciais[i] = fopen(nomeArquivo, "r");
   }
 
   // verificação de erros na leitura dos arquivos
