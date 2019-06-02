@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include "funcoes.h"
 #define MAX 80
-#define PORT 8087
+#define PORT 8080
 #define SA struct sockaddr
 
 int main() {
@@ -72,10 +72,10 @@ int main() {
   } while (bytes_recv <= 0);
 
   char iInicialString[3], iFinalString[3], vizinhoString[3], idString[3];
-  bzero(iInicialString,sizeof(iInicialString));
-  bzero(iFinalString,sizeof(iFinalString));
-  bzero(vizinhoString,sizeof(vizinhoString));
-  bzero(idString,sizeof(idString));
+  bzero(iInicialString, sizeof(iInicialString));
+  bzero(iFinalString, sizeof(iFinalString));
+  bzero(vizinhoString, sizeof(vizinhoString));
+  bzero(idString, sizeof(idString));
 
   j = 0;
 
@@ -164,14 +164,15 @@ int main() {
     strcpy(buffer, "");
     do {
       bytes_recv = recv(sockfd, buffer, 1024, 0);
-    } while (bytes_recv <= 0);
+    } while (strcmp(buffer,"") == 0 || strcmp(buffer, " ") == 0);
     buffer[bytes_recv] = '\0';
+
     j = 0;
     while (buffer[j] != '=')
       j++;
     j++;
     char iteracaoString[3];
-    bzero(iteracaoString,sizeof(iteracaoString));
+    bzero(iteracaoString, sizeof(iteracaoString));
     i = 0;
     while (buffer[j] != '\0') {
       iteracaoString[i] = buffer[j];
@@ -190,19 +191,15 @@ int main() {
         linhaFinalRecebida[i] = 0;
       }
 
-      printf("Aguardando linha do servidor...\n");
+      printf("Recebendo linhas de intersecção...\n");
       bytes_recv =
           recv(sockfd, linhaInicialRecebida, sizeof(linhaInicialRecebida), 0);
 
-      printf("Recebeu a linha inicial do servidor %d\n", bytes_recv);
       if (vizinhoBaixo != 0) {
         // só vai pegar a linha final se não for o último nó
         bytes_recv =
             recv(sockfd, linhaFinalRecebida, sizeof(linhaFinalRecebida), 0);
       }
-
-      printf("Recebeu a linha final do servidor %d\n", bytes_recv);
-
       for (i = 0; i < 402; i++) {
         // printf("[%d][%d] = %.4f\n", iInicial - 1, i,
         // linhaInicialRecebida[i]);
@@ -267,11 +264,11 @@ int main() {
 
       iteracaoLocal++;
     } else if (iteracaoGlobal == 0) {
+      escreveMatrizArquivo(matrizBlack, iInicial, iFinal, id);
       break;  // termina o while
     }
   }
   // Escreve a matriz em um arquivo
   printf("\nFIM DO CLIENTE %d\n", id);
-  escreveMatrizArquivo(matrizBlack, iInicial, iFinal, id);
   // close(sockfd);
 }

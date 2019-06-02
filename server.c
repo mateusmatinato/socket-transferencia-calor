@@ -11,13 +11,13 @@
 #include <unistd.h>
 #include "funcoes.h"
 #define MAX 80
-#define PORT 8087
+#define PORT 8080
 #define SA struct sockaddr
-#define NUM_NODES 7 //1, 3 ou 7
+#define NUM_NODES 3  // 1, 3 ou 7
 
 // Cada nó possuirá um id, um ip, uma porta e um rank atribuído pelo servidor.
 struct clients {
-  char ip[12];
+  char ip[12];  
   int port;
   int iInicial;
   int iFinal;
@@ -94,9 +94,9 @@ int main() {
     len = sizeof(cli);
     nodes[i] = accept(sockfd, (SA*)&cli, &len);
     if (nodes[i] < 0) {
-      printf("Conexão com o nó %d falhou!\n", i + 1);
+      printf("\nConexão com o cliente %d falhou!\n", i + 1);
     } else {
-      printf("Conexão com o nó %d estabelecida com sucesso!\n", i + 1);
+      printf("\nConexão com o cliente %d estabelecida com sucesso!\n", i + 1);
     }
 
     // Quando o cliente se conectar, ele deve informar o IP para o servidor no
@@ -127,7 +127,7 @@ int main() {
     iInicial += 400 / (NUM_NODES + 1);
     iFinal += 400 / (NUM_NODES + 1);
 
-    printf("\nCliente %d conectado\nEndereço: %s:%d\n", i + 1, clients[i].ip,
+    printf("Cliente %d conectado\nEndereço: %s:%d\n", i + 1, clients[i].ip,
            clients[i].port);
     fflush(stdout);
   }
@@ -184,11 +184,10 @@ int main() {
   k = 1;
 
   remove("MatrizFinal");  // remove o arquivo se tiver algum salvo
-  
-  double tempoIteracao = 0, tempoTotal = 0, tempoExecucao = 0;
+
+  double tempoExecucao = 0;
   clock_t inicio = clock();
   while (1) {
-    start = clock();
     // começa a calcular o tempo da iteraçao
 
     float maiorErro = 0;
@@ -251,7 +250,8 @@ int main() {
         }
       }
 
-      printf("\nIteração %d -> Erro: %.3f\n", iteracaoLocal, erroAbsoluto);
+      printf("\nInformações da iteração do servidor:\n");
+      printf("Iteração %d -> Erro: %.3f\n", iteracaoLocal, erroAbsoluto);
       k++;
 
       // recebe as linhas de intersecção e coloca na matrizBlack
@@ -300,16 +300,10 @@ int main() {
         }
       }
 
-      end = clock();
-      tempoIteracao = ((double)(end - start)) / CLOCKS_PER_SEC;
-      tempoTotal += tempoIteracao;
-
       if (erroAbsoluto > maiorErro)
         maiorErro = erroAbsoluto;
-      printf(
-          "--- FIM DA ITERAÇÃO %d -> Maior Erro: %.3f -> Tempo %.3f segs "
-          "---\n\n",
-          iteracaoGlobal, maiorErro, tempoIteracao);
+      printf("--- FIM DA ITERAÇÃO %d -> Maior Erro: %.3f ---\n\n",
+             iteracaoGlobal, maiorErro);
 
       iteracaoLocal++;
 
@@ -325,28 +319,21 @@ int main() {
     }
   }
   clock_t fim = clock();
-  tempoExecucao = (double) (fim - inicio) / CLOCKS_PER_SEC;
-
-  printf("Tempo total de execução: %lf segundos\n", tempoExecucao*10);
+  tempoExecucao = (double)(fim - inicio) / CLOCKS_PER_SEC;
 
   escreveMatrizArquivo(matrizBlack, iInicial, iFinal, sockfd);
 
-  matrizSaida(sockfd,1);
+  matrizSaida(sockfd, 1);
   for (i = 0; i < NUM_NODES; i++) {
     matrizSaida(clients[i].id, 0);
   }
 
   printf("\n\n----------------- FIM -------------\n");
   printf("Número de Nós (Clientes + Servidor): %d\n", NUM_NODES + 1);
-  printf("Tempo total das iterações: %lf segundos\n", tempoTotal*10);
+  printf("Tempo total das iterações: %lf segundos\n", tempoExecucao * 10);
   printf("Número total de iterações: %d\n", iteracaoLocal - 1);
   printf("A matriz final foi salva no arquivo MatrizFinal.txt\n");
   printf("-----------------------------------\n\n");
 
-  printf("Para finalizar digite SIM: ");
-  strcpy(buffer, "");
-  scanf("%s", buffer);
-  if (strcmp(buffer, "SIM") == 0 || strcmp(buffer, "sim") == 0) {
-    close(sockfd);  // termina o socket
-  }
+  close(sockfd);
 }
