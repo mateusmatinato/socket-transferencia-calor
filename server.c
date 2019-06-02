@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include "funcoes.h"
 #define MAX 80
-#define PORT 8080
+#define PORT 8087
 #define SA struct sockaddr
 #define NUM_NODES 7 //1, 3 ou 7
 
@@ -183,8 +183,10 @@ int main() {
   float erroAtual;
   k = 1;
 
-  double tempoTotal = 0;
   remove("MatrizFinal");  // remove o arquivo se tiver algum salvo
+  
+  double tempoIteracao = 0, tempoTotal = 0, tempoExecucao = 0;
+  clock_t inicio = clock();
   while (1) {
     start = clock();
     // começa a calcular o tempo da iteraçao
@@ -299,7 +301,7 @@ int main() {
       }
 
       end = clock();
-      double tempoIteracao = ((double)(end - start)) / CLOCKS_PER_SEC;
+      tempoIteracao = ((double)(end - start)) / CLOCKS_PER_SEC;
       tempoTotal += tempoIteracao;
 
       if (erroAbsoluto > maiorErro)
@@ -322,6 +324,10 @@ int main() {
       break;
     }
   }
+  clock_t fim = clock();
+  tempoExecucao = (double) (fim - inicio) / CLOCKS_PER_SEC;
+
+  printf("Tempo total de execução: %lf segundos\n", tempoExecucao*10);
 
   escreveMatrizArquivo(matrizBlack, iInicial, iFinal, sockfd);
 
@@ -332,7 +338,7 @@ int main() {
 
   printf("\n\n----------------- FIM -------------\n");
   printf("Número de Nós (Clientes + Servidor): %d\n", NUM_NODES + 1);
-  printf("Tempo total: %.5f segundos\n", tempoTotal);
+  printf("Tempo total das iterações: %lf segundos\n", tempoTotal*10);
   printf("Número total de iterações: %d\n", iteracaoLocal - 1);
   printf("A matriz final foi salva no arquivo MatrizFinal.txt\n");
   printf("-----------------------------------\n\n");
