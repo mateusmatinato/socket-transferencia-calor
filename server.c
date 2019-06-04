@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include "funcoes.h"
 #define MAX 80
-#define PORT 8080
+#define PORT 8081
 #define SA struct sockaddr
 #define NUM_NODES 3  // 1, 3 ou 7
 
@@ -33,7 +33,6 @@ int main() {
   struct clients clients[NUM_NODES];
   char buffer[MAX];
   int i, j, k, bytes_recv;
-  clock_t end, start;
 
   // Zera a matriz
   float matrizRed[402][402], matrizBlack[402][402];
@@ -185,7 +184,8 @@ int main() {
 
   remove("MatrizFinal");  // remove o arquivo se tiver algum salvo
 
-  double tempoExecucao = 0;
+  double relogioParede = 0, relogioCPU = 0;
+  time_t begin = time(NULL);
   clock_t inicio = clock();
   while (1) {
     // começa a calcular o tempo da iteraçao
@@ -319,8 +319,10 @@ int main() {
     }
   }
   clock_t fim = clock();
-  tempoExecucao = (double)(fim - inicio) / CLOCKS_PER_SEC;
+  time_t end = time(NULL);
 
+  relogioParede = (double)(end - begin);
+  relogioCPU = (double) (fim - inicio) / CLOCKS_PER_SEC;
   escreveMatrizArquivo(matrizBlack, iInicial, iFinal, sockfd);
 
   matrizSaida(sockfd, 1);
@@ -330,7 +332,8 @@ int main() {
 
   printf("\n\n----------------- FIM -------------\n");
   printf("Número de Nós (Clientes + Servidor): %d\n", NUM_NODES + 1);
-  printf("Tempo total das iterações: %lf segundos\n", tempoExecucao * 10);
+  printf("Tempo total do relógio de parede: %lf segundos\n", relogioParede);
+  printf("Tempo total do relógio da CPU: %lf segundos\n", relogioCPU);
   printf("Número total de iterações: %d\n", iteracaoLocal - 1);
   printf("A matriz final foi salva no arquivo MatrizFinal.txt\n");
   printf("-----------------------------------\n\n");
