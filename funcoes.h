@@ -26,50 +26,6 @@ void escreveMatrizArquivo(float matriz[402][402],
   }
 }
 
-int juntaMatrizesArquivo(int* nodes, int NUM_NODES) {
-  // abre todos os arquivos txt com as matrizes processadas por cada nó
-  int i;
-  FILE* matrizesParciais[NUM_NODES];
-  char* nomeArquivo;
-  for (i = 0; i < NUM_NODES; i++) {
-    sprintf(nomeArquivo, "Matriz-%d", nodes[i]);
-    matrizesParciais[i] = fopen(nomeArquivo, "r");
-  }
-
-  // verificação de erros na leitura dos arquivos
-  for (i = 0; i < NUM_NODES; i++) {
-    if (matrizesParciais[i] == NULL)  // se deu problema na leitura dos arquivos
-    {
-      printf("Erro ao abrir arquivo texto.");
-      return 0;
-    }
-  }
-
-  // cria arquivo que vai armazenar o resultado
-  FILE* matrizResultado = fopen("Matriz-resultado.txt", "w");
-  if (matrizResultado ==
-      NULL)  // se deu problema na criacao do arquivo resultado
-  {
-    printf("Erro ao criar arquivo Matriz-resultado.");
-    return 0;
-  }
-
-  char c;
-  // copia conteudo do primeiro arquivo para o Matriz-resultado
-  for (i = 0; i < NUM_NODES; i++) {
-    while ((c = fgetc(matrizesParciais[i])) !=
-           EOF)  // enquanto o caracter que tiver sendo lido for diferente do
-                 // fim do arquivo
-      fputc(c, matrizResultado);  // coloca ele no arquivo resultado
-  }
-
-  for (i = 0; i < NUM_NODES; i++) {
-    fclose(matrizesParciais[i]);
-  }
-
-  return 1;
-}
-
 void matrizSaida(int id, int flag) {
   FILE* arquivoNo;
   FILE* arquivoFinal;
@@ -80,7 +36,8 @@ void matrizSaida(int id, int flag) {
   arquivoNo = fopen(nomeArquivo, "r");
   arquivoFinal = fopen("MatrizFinal", "a");
 
-  char leitor[10000];
+  char leitor[5000];
+  bzero(leitor,sizeof(leitor));
 
   int i;
   if (flag == 1) {
@@ -98,7 +55,5 @@ void matrizSaida(int id, int flag) {
   fclose(arquivoNo);
   fclose(arquivoFinal);
 
-  // remove o arquivo de texto do nó
-  // strcat(nomeArquivo,".txt");
-  remove(nomeArquivo);
+  //remove(nomeArquivo);
 }
