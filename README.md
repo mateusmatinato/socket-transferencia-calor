@@ -27,12 +27,6 @@ Trabalho da disciplina do 7º semestre do curso de Bacharelado em Ciência da Co
 | 305   	| 275    	| 40          	|
 </center>
 
-### Todo List
-* Não está calculando o tempo direitinho (eu acho).
-
-* As vezes simplesmente não inicia a iteração em algum dos clientes. (?)
-
-* Tentar resolver pq ta printando -0.00 no arquivo grrr
-
-### Anotaçoes
-* TA QUASE VEI
+# MPI - Transferência de Calor
+Fazer o mesmo trabalho que foi feito com sockets utilizando MPI.
+O arquivo é trabalho-mpi.c
