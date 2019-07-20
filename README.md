@@ -32,6 +32,7 @@ Fazer o mesmo trabalho que foi feito com sockets utilizando MPI.
 O arquivo é trabalho-mpi.c
 
 ** Tabela de execuções MPI **
+
 | NUM DE PROCESSOS 	| WALL-CLOCK (em S) 	| MEDIA DOS TEMPOS DE CPU (em S) 	|
 |------------------	|-------------------	|--------------------------------	|
 | 1                	| 3                 	| 2.760189                       	|
