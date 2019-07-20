@@ -3,13 +3,14 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "time.h"
 
 #define maxtime 1000
 /* Simulação é executada com MINPROC processos, podendo
  * ser igual a 1 para testes. Para uma matriz maior é
  * preciso ajustar MINPROC p/ o numero real de nós
  * sendo que esse valor precisa ser trocado AQUI */
-#define MINPROC 2
+#define MINPROC 1
 #define cols 400
 #define totrows 400
 #define rows totrows / MINPROC + 2
@@ -69,26 +70,32 @@ void matrizSaida(int id, int flag) {
     }
     fprintf(arquivoFinal, "\n");
   }
- char ch;
+  char ch;
   while ((ch = fgetc(arquivoNo)) != EOF)
     fputc(ch, arquivoFinal);
 
   fclose(arquivoNo);
   fclose(arquivoFinal);
 
-  //remove(nomeArquivo);
+  remove(nomeArquivo);
 }
 
 int main(int argc, char** argv) {
   double erroAtual, erroAbsoluto, maiorErro;
   int s, e, mylen, r, c, tick;
   int inum, nproc, dims, coords, ndim = 1;
-  int i = 0;
+  int i = 0, iteracoes = 0;
   int periods, reorder;  // usadas como booleanas
   int upproc, downproc;
   MPI_Comm comm1d;  // nova definição para comunicador!!
   MPI_Status status;
   // Chamando MPI_INIT
+
+  /* Inicia tempos */
+  double relogioParede = 0, relogioCPU = 0;
+  time_t begin = time(NULL);
+  clock_t inicio = clock();
+
   MPI_Init(&argc, &argv);
   // Recebendo o número de processos em paralelo
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
@@ -179,12 +186,13 @@ int main(int argc, char** argv) {
     MPI_Allreduce(&erroAbsoluto, &maiorErro, 1, MPI_DOUBLE, MPI_MAX,
                   MPI_COMM_WORLD);
 
-    if (inum == 1) {
+    if (inum == 0) {
       printf("Fim da iteração %d\tMaior erro: %f\n", i, maiorErro);
     }
     i++;
     if (maiorErro < 0.01) {
       loop = 0;
+      iteracoes = i - 1;
     }
   }
 
@@ -201,6 +209,31 @@ int main(int argc, char** argv) {
         matrizSaida(i, 0);
       }
     }
+  }
+  // Cálculo dos tempos
+  clock_t fim = clock();
+  time_t end = time(NULL);
+
+  relogioParede = (double)(end - begin);
+  relogioCPU = (double)(fim - inicio) / CLOCKS_PER_SEC;
+
+  if (inum == 0) {
+    printf("\n\n----------------- FIM -------------\n");
+    printf("Número de processos: %d\n", dims);
+  }
+  // Mostra informações finais
+  MPI_Barrier(MPI_COMM_WORLD);
+  printf("Processo %d -> Tempo de CPU: %lf segundos\n", inum, relogioCPU);
+  MPI_Barrier(MPI_COMM_WORLD);
+  double mediaTemposCPU;
+  MPI_Allreduce(&relogioCPU, &mediaTemposCPU, 1, MPI_DOUBLE, MPI_SUM,
+                MPI_COMM_WORLD);
+  if (inum == 0) {
+    printf("Média dos tempos de CPU: %lf segundos\n", mediaTemposCPU/dims);
+    printf("Tempo total de execução (wall-clock): %lf segundos\n", relogioParede);
+    printf("Número total de iterações: %d\n", iteracoes);
+    printf("A matriz final foi salva no arquivo MatrizFinal.txt\n");
+    printf("-----------------------------------\n\n");
   }
 
   MPI_Finalize();
