@@ -30,3 +30,16 @@ Trabalho da disciplina do 7º semestre do curso de Bacharelado em Ciência da Co
 # MPI - Transferência de Calor
 Fazer o mesmo trabalho que foi feito com sockets utilizando MPI.
 O arquivo é trabalho-mpi.c
+
+** Tabela de execuções MPI **
+| NUM DE PROCESSOS 	| WALL-CLOCK (em S) 	| MEDIA DOS TEMPOS DE CPU (em S) 	|
+|------------------	|-------------------	|--------------------------------	|
+| 1                	| 3                 	| 2.760189                       	|
+| 2                	| 1                 	| 1.393159                       	|
+| 4                	| 1                 	| 1.244290                       	|
+| 8                	| 2                 	| 0.816717                       	|
+| 16               	| 2                 	| 0.456811                       	|
+| 20               	| 3                 	| 0.366571                       	|
+| 40               	| 4                 	| 0.281137                       	|
+| 80               	| 7                 	| 0.253224                       	|
+| 100              	| 10                	| 0.294401                       	|
